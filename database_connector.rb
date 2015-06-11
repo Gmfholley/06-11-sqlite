@@ -1,4 +1,6 @@
 require 'sqlite3'
+require 'active_support'
+require 'active_support/core_ext/string/filters.rb'
 
 #Module DatabaseConnector
   # connects to the database
@@ -17,12 +19,35 @@ require 'sqlite3'
   #
   # db_connection           - Object of the database's connection
   # table                   - String of the table name
-  def create_table(db_connection: db_connection, table: table, field_names_and_types)
-    
-    
-    db_connection.execute("CREATE TABLE #{table} (id INTEGER PRIMARY KEY, name TEXT);")
+  # field_names_and_types   - Array of Arrays of field names and their types - first Array assumed to be Primary key
+  #
+  # returns nothing
+  def create_table(db_connection: db_connection, table: table, field_names_and_types: field_names_and_types)
+    stringify_field_names_and_types = create_string_of_field_names_and_types(field_names_and_types)
+    binding.pry
+    db_connection.execute("CREATE TABLE #{table} (#{stringify_field_names_and_types});")
   end
-
+  
+  # returns a stringified version of this table, optimizied for SQL statements
+  #
+  # Example: 
+  #           [["id", "integer"], ["name", "text"], ["grade", "integer"]]
+  #        => "id INTEGER PRIMARY KEY, name TEXT, grade INTEGER" 
+  #
+  # field_names_and_types     - Array of Arrays of field names and their types - first Array assumed to be Primary key
+  #
+  # returns String
+  def create_string_of_field_names_and_types(field_names_and_types)
+    field_names_and_types.each do |array|
+      array[1] = array[1].upcase + ","
+    end
+    field_names_and_types.last[1] = field_names_and_types.last[1].remove(/,/)
+    if !field_names_and_types.first[1].include?("PRIMARY KEY")
+      field_names_and_types.first[1] = field_names_and_types.first[1].remove(/,/) + " PRIMARY KEY,"
+    end
+    field_names_and_types.join(" ")
+  end
+  
   # creates a new record in the table
   #
   # db_connection           - Object of the database's connection
@@ -87,6 +112,10 @@ require 'sqlite3'
     end
     db_connection.execute("SELECT #{field_names} FROM #{table};")
   end
+  
+  #def return_records_as_string(array)
+    
+  #end  
   
   # adds '' quotes around a string for SQL statement
   #
